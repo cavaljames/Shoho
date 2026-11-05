@@ -4,6 +4,52 @@
 
 喝一小口，休息片刻。基于 **Tauri 2 + TypeScript + Rust** 的 macOS / Windows 喝水提醒应用。
 
+## macOS 测试版安装
+
+从本仓库的 [GitHub Releases](https://github.com/cavaljames/Shoho/releases) 下载安装包。Apple 芯片 Mac（M 系列）选择文件名包含 `aarch64` 的 DMG；Intel Mac 选择 `x86_64`，以该 Release 实际提供的附件为准。
+
+当前测试版使用临时签名（ad-hoc），尚未使用 Apple Developer ID 签名和完成 Apple 公证，首次打开可能受到系统拦截。
+
+1. 双击下载的 `.dmg`，将 **Shoho 拖入 Applications（应用程序）**。
+2. 在 Finder 的「应用程序」中打开 Shoho。
+3. 如果提示「无法验证开发者」或「Apple 无法检查」，关闭提示，打开 **系统设置 → 隐私与安全性**。
+4. 找到 Shoho 被阻止打开的说明，点击 **仍要打开**，按系统提示验证身份并确认打开。
+
+这些步骤需要先尝试打开一次 Shoho。参考 [Apple 官方操作说明](https://support.apple.com/zh-cn/102445)。
+
+<details>
+<summary>提示「已损坏」或没有「仍要打开」时怎么办？</summary>
+
+请先核对下载文件和安装后的 App 完整性，校验失败时重新下载并反馈问题。下面以 Apple 芯片版 `0.3.3` 为例：
+
+1. 下载同版本、同架构的 `.dmg.sha256` 校验文件，与 DMG 放在同一目录。该本地构建的 [0.3.3 Apple 芯片版校验文件](docs/checksums/Shoho_0.3.3_aarch64.dmg.sha256) 也保存在仓库中，可打开链接后点击 GitHub 的「Download raw file」下载。
+2. 打开「终端」，进入下载目录并执行校验；如果文件保存在其他目录，请相应调整第一行：
+
+   ```sh
+   cd ~/Downloads
+   shasum -a 256 -c Shoho_0.3.3_aarch64.dmg.sha256
+   ```
+
+   输出应为 `Shoho_0.3.3_aarch64.dmg: OK`。其他版本、架构或重新构建的安装包需要使用对应校验文件。
+
+3. 确保 Shoho 已拖入「应用程序」，再检查 App 签名完整性：
+
+   ```sh
+   codesign --verify --deep --strict --verbose=2 "/Applications/Shoho.app"
+   ```
+
+   应显示 `valid on disk` 和 `satisfies its Designated Requirement`。这项检查验证文件完整性，不代表经过 Apple 公证。
+
+4. 仅在上述校验均通过、确认应用来自本仓库并信任来源后，可自行执行以下命令，移除 Shoho 的下载隔离标记，再从「应用程序」重新打开：
+
+   ```sh
+   xattr -dr com.apple.quarantine "/Applications/Shoho.app"
+   ```
+
+   这条命令只作用于上述 Shoho 应用包，不会使应用获得 Apple 公证。
+
+</details>
+
 ## 开发
 
 需要 Node.js 22.12+（推荐 24）、Rust stable（最低 1.90）以及系统编译工具：macOS 使用 Xcode Command Line Tools，Windows 使用 Microsoft C++ Build Tools 与 WebView2。
@@ -64,7 +110,7 @@ npm run dist:win
 
 macOS 开发包使用完整的 ad-hoc 应用包签名。`npm run dist:mac` 和 macOS CI 构建都会执行严格签名校验、DMG 校验和只读挂载校验，检查实际交付的 App 版本与可执行文件，并生成 `.dmg.sha256` 校验文件。
 
-ad-hoc 签名保证应用包签名完整，但不是 Apple Developer ID 签名，也没有 Apple 公证。通过浏览器下载后，macOS 仍可能提示开发者无法验证；仅在确认来源与校验通过后，按 macOS 的「系统设置 → 隐私与安全性 → 仍要打开」流程允许该应用。公开分发需要配置 Developer ID Application 签名和 Apple 公证；Windows 公开分发同样应配置签名。原生通知还取决于系统通知授权，默认提醒浮窗可以独立使用。
+当前 macOS 测试版使用 ad-hoc 签名。用户首次安装的步骤与校验方法见上方的 [macOS 测试版安装](#macos-测试版安装)。发布时将 `.dmg` 与对应的 `.dmg.sha256` 一起上传到 GitHub Release，并在 Release 正文链接到这份说明。要让互联网下载的应用正常通过 macOS 默认安全检查，需要配置 Developer ID Application 签名和 Apple 公证，详见 [Apple 官方分发说明](https://developer.apple.com/developer-id/)。Windows 公开分发同样应配置签名。原生通知还取决于系统通知授权，默认提醒浮窗可以独立使用。
 
 ## 数据兼容
 
