@@ -6,10 +6,39 @@ use std::collections::HashSet;
 pub const MINUTE: i64 = 60_000;
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
+pub struct Preset {
+    pub id: String,
+    pub name: String,
+    pub amount: u32,
+}
+fn default_presets(cup: u32) -> Vec<Preset> {
+    [
+        ("sip", "一口", 30),
+        ("cup", "一杯", cup),
+        ("bowl", "一碗", 350),
+    ]
+    .into_iter()
+    .map(|(id, name, amount)| Preset {
+        id: id.into(),
+        name: name.into(),
+        amount,
+    })
+    .collect()
+}
+fn valid_label(label: &str) -> bool {
+    !label.is_empty()
+        && label.trim() == label
+        && label.chars().count() <= 12
+        && !label.chars().any(char::is_control)
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase", default)]
 pub struct Settings {
     pub goal: u32,
     pub cup: u32,
+    pub presets: Vec<Preset>,
+    pub default_preset_id: String,
     pub interval: u32,
     pub start: String,
     pub end: String,
@@ -22,6 +51,8 @@ impl Default for Settings {
         Self {
             goal: 1800,
             cup: 200,
+            presets: default_presets(200),
+            default_preset_id: "cup".into(),
             interval: 45,
             start: "09:00".into(),
             end: "22:00".into(),
@@ -34,7 +65,7 @@ impl Default for Settings {
 impl Settings {
     pub fn validate(&self) -> Result<(), String> {
         if !(200..=6000).contains(&self.goal)
-            || !(50..=1000).contains(&self.cup)
+            || !(10..=1000).contains(&self.cup)
             || !(5..=180).contains(&self.interval)
         {
             return Err("请检查每日目标、每杯水量和提醒间隔。".into());
@@ -47,7 +78,41 @@ impl Settings {
         if self.start == self.end {
             return Err("提醒开始和结束时间需要不同。".into());
         }
+        if self.presets.is_empty() || self.presets.len() > 8 {
+            return Err("请保留 1–8 个水量快捷项。".into());
+        }
+        let mut ids = HashSet::new();
+        for preset in &self.presets {
+            if preset.id.is_empty()
+                || preset.id.len() > 64
+                || !preset
+                    .id
+                    .chars()
+                    .all(|c| c.is_ascii_alphanumeric() || c == '-')
+                || !ids.insert(&preset.id)
+                || !valid_label(&preset.name)
+                || !(10..=1000).contains(&preset.amount)
+            {
+                return Err("快捷项名称需为 1–12 个字，水量为 10–1000 ml，且标识不能重复。".into());
+            }
+        }
+        if !self
+            .presets
+            .iter()
+            .any(|preset| preset.id == self.default_preset_id)
+        {
+            return Err("请选择一个默认快捷项。".into());
+        }
         Ok(())
+    }
+    pub fn default_preset(&self) -> &Preset {
+        self.presets
+            .iter()
+            .find(|preset| preset.id == self.default_preset_id)
+            .unwrap_or(&self.presets[0])
+    }
+    pub fn sync_cup(&mut self) {
+        self.cup = self.default_preset().amount;
     }
 }
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -55,6 +120,8 @@ pub struct Record {
     pub id: String,
     pub amount: u32,
     pub at: i64,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub label: Option<String>,
 }
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -122,8 +189,13 @@ impl Data {
     }
     pub fn recover(raw: &Value, at: i64) -> Self {
         let mut data = Self::new(at);
-        if let Ok(settings) = serde_json::from_value::<Settings>(raw["settings"].clone()) {
+        if let Ok(mut settings) = serde_json::from_value::<Settings>(raw["settings"].clone()) {
+            if raw["settings"].get("presets").is_none() {
+                settings.presets = default_presets(settings.cup);
+                settings.default_preset_id = "cup".into();
+            }
             if settings.validate().is_ok() {
+                settings.sync_cup();
                 data.settings = settings;
             }
         }
@@ -135,7 +207,8 @@ impl Data {
                 .filter(|record| {
                     !record.id.is_empty()
                         && record.id.len() < 100
-                        && (50..=1000).contains(&record.amount)
+                        && (10..=1000).contains(&record.amount)
+                        && record.label.as_ref().is_none_or(|label| valid_label(label))
                         && record.at > 0
                         && record.at <= at
                         && Local.timestamp_millis_opt(record.at).single().is_some()
@@ -179,17 +252,39 @@ impl Data {
         Status { kind, at: when }
     }
     pub fn drink(&mut self, amount: u32, at: i64) -> Result<(), String> {
-        if !(50..=1000).contains(&amount) {
-            return Err("每次记录的水量需要在 50–1000 ml 之间。".into());
+        self.drink_named(amount, None, at)
+    }
+    pub fn drink_named(
+        &mut self,
+        amount: u32,
+        label: Option<String>,
+        at: i64,
+    ) -> Result<(), String> {
+        if !(10..=1000).contains(&amount) {
+            return Err("每次记录的水量需要在 10–1000 ml 之间。".into());
+        }
+        if label.as_ref().is_some_and(|label| !valid_label(label)) {
+            return Err("记录名称需为 1–12 个字。".into());
         }
         self.records.push(Record {
             id: uuid::Uuid::new_v4().to_string(),
             amount,
             at,
+            label,
         });
         self.paused_until = 0;
         self.reset_clock(at);
         Ok(())
+    }
+    pub fn drink_preset(&mut self, id: &str, at: i64) -> Result<(), String> {
+        let preset = self
+            .settings
+            .presets
+            .iter()
+            .find(|preset| preset.id == id)
+            .cloned()
+            .ok_or("这个快捷项已不存在，请重新选择。")?;
+        self.drink_named(preset.amount, Some(preset.name), at)
     }
     pub fn pause(&mut self, minutes: u32, at: i64) -> Result<(), String> {
         if ![0, 10, 30, 60].contains(&minutes) {
@@ -324,5 +419,46 @@ mod tests {
         assert_eq!(data.settings.goal, 1800);
         assert_eq!(data.records.len(), 1);
         assert_eq!(data.records[0].id, "ok");
+    }
+    #[test]
+    fn legacy_cup_amount_becomes_default_named_preset() {
+        let at = at(5, 10, 0);
+        let raw = serde_json::json!({"settings":{"cup":500},"records":[{"id":"old","amount":200,"at":at-1}]});
+        let data = Data::recover(&raw, at);
+        assert_eq!(data.settings.default_preset().name, "一杯");
+        assert_eq!(data.settings.default_preset().amount, 500);
+        assert_eq!(data.records.len(), 1);
+        assert!(data.records[0].label.is_none());
+        data.settings.validate().unwrap();
+    }
+    #[test]
+    fn named_presets_record_snapshot_labels_and_allow_a_small_sip() {
+        let mut data = Data::new(at(5, 10, 0));
+        data.settings.presets[0].name = "一小口".into();
+        data.settings.presets[0].amount = 20;
+        data.drink_preset("sip", at(5, 10, 0)).unwrap();
+        data.settings.presets[0].name = "一大口".into();
+        assert_eq!(data.records[0].label.as_deref(), Some("一小口"));
+        assert_eq!(data.records[0].amount, 20);
+        assert!(data.drink_preset("deleted", at(5, 10, 0)).is_err());
+        assert!(data.drink_named(9, None, at(5, 10, 0)).is_err());
+        assert!(data
+            .drink_named(20, Some("  ".into()), at(5, 10, 0))
+            .is_err());
+    }
+    #[test]
+    fn preset_validation_rejects_empty_duplicate_or_missing_default() {
+        let mut settings = Settings::default();
+        settings.presets.clear();
+        assert!(settings.validate().is_err());
+        settings = Settings::default();
+        settings.presets[0].id = settings.presets[1].id.clone();
+        assert!(settings.validate().is_err());
+        settings = Settings::default();
+        settings.default_preset_id = "missing".into();
+        assert!(settings.validate().is_err());
+        settings = Settings::default();
+        settings.presets[0].name = "\n".into();
+        assert!(settings.validate().is_err());
     }
 }

@@ -128,4 +128,25 @@ mod tests {
         assert_eq!(restored.data.records[0].amount, 250);
         assert_eq!(restored.data.next_reminder_at, at + 10 * MINUTE);
     }
+    #[test]
+    fn named_presets_default_and_record_labels_survive_restart() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("shoho.json");
+        let at = now();
+        let mut store = Store::load(path.clone(), None, at).unwrap();
+        store
+            .update(|data| {
+                data.settings.presets[2].name = "我的碗".into();
+                data.settings.presets[2].amount = 450;
+                data.settings.default_preset_id = "bowl".into();
+                data.settings.sync_cup();
+                data.drink_preset("bowl", at)
+            })
+            .unwrap();
+        let restored = Store::load(path, None, at + 1).unwrap();
+        assert_eq!(restored.data.settings.default_preset().name, "我的碗");
+        assert_eq!(restored.data.settings.cup, 450);
+        assert_eq!(restored.data.records[0].label.as_deref(), Some("我的碗"));
+        assert_eq!(restored.data.records[0].amount, 450);
+    }
 }

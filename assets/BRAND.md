@@ -8,7 +8,7 @@
 - `icon.png`：恢复为首版内置 image_gen 生成的浅青玉色素材，保留原始颜色和透明度。
 - `logo.svg`：用于小尺寸或单色场景的简化矢量标识。
 - `trayTemplate.png`：与标识相呼应的单色托盘模板，适应系统深浅主题。
-- `src-tauri/icons/`：通过 `npm run tauri icon assets/icon.png` 导出的各平台图标。
+- `src-tauri/icons/`：通过 `npm run icons` 导出的各平台图标。
 
 ## 生成方式
 
@@ -24,3 +24,5 @@ Composition: square 1024 x 1024 image; one softly rounded square porcelain-frost
 Lighting and material: restrained glass refraction, delicate beveled edge, one broad soft highlight, very shallow soft contact shadow; subtle tactile relief rather than dramatic extrusion. Matte warm-white tile, slightly cool frosted center; muted jade/teal droplet. Front-facing icon with a hint of dimensionality, not an angled product mockup.
 Constraints: no words, no letters, no wordmark, no face, no eyes, no cheeks, no mascot, no bubbles, no sparkles, no extra objects, no decorative framing, no rainbow sheen, no strong gradients in the backdrop, no heavy shadows, no dark outlines, no watermark. Refined, quiet, modern and minimal. This is a finished icon asset, not a presentation sheet or a collage.
 ```
+
+系统图标在 1024 × 1024 的透明导出画布上增加留白，原图按 912 × 912 居中放置；可见底板约占画布宽度的 80%。应用内仍使用未修改的原始素材。

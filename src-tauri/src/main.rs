@@ -13,8 +13,8 @@ use std::{
 use storage::Store;
 use tauri::{
     image::Image,
-    menu::{Menu, MenuItem},
-    tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
+    menu::{Menu, MenuItem, PredefinedMenuItem},
+    tray::TrayIconBuilder,
     AppHandle, Emitter, Manager, State, WebviewUrl, WebviewWindow, WebviewWindowBuilder,
 };
 use tauri_plugin_autostart::ManagerExt;
@@ -98,8 +98,8 @@ fn open_main(app: &AppHandle) -> Result<(), String> {
     }
     let builder = WebviewWindowBuilder::new(app, "main", WebviewUrl::App("index.html".into()))
         .title("小喝 · Shoho")
-        .inner_size(1160.0, 820.0)
-        .min_inner_size(860.0, 650.0)
+        .inner_size(480.0, 620.0)
+        .min_inner_size(420.0, 540.0)
         .visible(false)
         .center()
         .on_navigation(internal_url);
@@ -116,11 +116,16 @@ fn open_reminder(app: &AppHandle) -> Result<(), String> {
         window.show().map_err(|error| error.to_string())?;
         return Ok(());
     }
+    let snapshot = app.state::<Backend>().snapshot()?;
+    let height = 166.0 + 54.0 * snapshot.data.settings.presets.len().div_ceil(3) as f64;
     let mut builder =
         WebviewWindowBuilder::new(app, "reminder", WebviewUrl::App("reminder.html".into()))
             .title("喝一小口 · Shoho")
-            .inner_size(358.0, 268.0)
+            .inner_size(320.0, height)
             .decorations(false)
+            .shadow(false)
+            .transparent(false)
+            .background_color(tauri::window::Color(248, 250, 248, 255))
             .resizable(false)
             .always_on_top(true)
             .skip_taskbar(true)
@@ -130,12 +135,11 @@ fn open_reminder(app: &AppHandle) -> Result<(), String> {
     if let Ok(Some(monitor)) = app.primary_monitor() {
         let area = monitor.work_area();
         let scale = monitor.scale_factor();
-        let x = (f64::from(area.position.x) + f64::from(area.size.width)) / scale - 382.0;
-        let y = (f64::from(area.position.y) + f64::from(area.size.height)) / scale - 292.0;
+        let x = (f64::from(area.position.x) + f64::from(area.size.width)) / scale - 344.0;
+        let y = (f64::from(area.position.y) + f64::from(area.size.height)) / scale - height - 24.0;
         builder = builder.position(x, y);
     }
     builder.build().map_err(|error| error.to_string())?;
-    let snapshot = app.state::<Backend>().snapshot()?;
     if snapshot.data.settings.system_notifications {
         if let Err(error) = app
             .notification()
@@ -155,32 +159,61 @@ fn update_tray(app: &AppHandle, snapshot: &Snapshot) -> tauri::Result<()> {
     };
     let total = snapshot.data.total(now());
     let title = format!("今日已喝 {total} / {} ml", snapshot.data.settings.goal);
-    let menu = Menu::with_items(
+    let menu = Menu::new(app)?;
+    menu.append(&MenuItem::with_id(
         app,
-        &[
-            &MenuItem::with_id(app, "summary", &title, false, None::<&str>)?,
-            &MenuItem::with_id(app, "open", "打开小喝", true, None::<&str>)?,
-            &MenuItem::with_id(
-                app,
-                "drink",
-                format!("喝了一杯 +{} ml", snapshot.data.settings.cup),
-                true,
-                None::<&str>,
-            )?,
-            &MenuItem::with_id(
-                app,
-                "pause",
-                if snapshot.data.paused_until > now() {
-                    "恢复提醒"
-                } else {
-                    "暂停提醒 1 小时"
-                },
-                true,
-                None::<&str>,
-            )?,
-            &MenuItem::with_id(app, "quit", "退出小喝", true, None::<&str>)?,
-        ],
-    )?;
+        "summary",
+        &title,
+        false,
+        None::<&str>,
+    )?)?;
+    menu.append(&PredefinedMenuItem::separator(app)?)?;
+    for preset in &snapshot.data.settings.presets {
+        menu.append(&MenuItem::with_id(
+            app,
+            format!("preset:{}", preset.id),
+            format!("记录{} · {} ml", preset.name, preset.amount),
+            true,
+            None::<&str>,
+        )?)?;
+    }
+    menu.append(&PredefinedMenuItem::separator(app)?)?;
+    menu.append(&MenuItem::with_id(
+        app,
+        "pause",
+        if snapshot.data.paused_until > now() {
+            "恢复提醒"
+        } else {
+            "暂停提醒 1 小时"
+        },
+        true,
+        None::<&str>,
+    )?)?;
+    menu.append(&MenuItem::with_id(
+        app,
+        "toggle",
+        if snapshot.data.settings.enabled {
+            "关闭提醒"
+        } else {
+            "开启提醒"
+        },
+        true,
+        None::<&str>,
+    )?)?;
+    menu.append(&MenuItem::with_id(
+        app,
+        "open",
+        "打开小喝",
+        true,
+        None::<&str>,
+    )?)?;
+    menu.append(&MenuItem::with_id(
+        app,
+        "quit",
+        "退出小喝",
+        true,
+        None::<&str>,
+    )?)?;
     tray.set_tooltip(Some(format!(
         "小喝 · {total} / {} ml",
         snapshot.data.settings.goal
@@ -197,7 +230,7 @@ fn create_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
         .icon(icon)
         .icon_as_template(cfg!(target_os = "macos"))
         .tooltip("小喝 · Shoho")
-        .show_menu_on_left_click(false)
+        .show_menu_on_left_click(true)
         .on_menu_event(|app, event| {
             let action = event.id().as_ref().to_string();
             let app = app.clone();
@@ -205,7 +238,14 @@ fn create_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
                 let backend = app.state::<Backend>();
                 let result = match action.as_str() {
                     "open" => open_main(&app),
-                    "drink" => backend.update(|data| data.drink(data.settings.cup, now())),
+                    action if action.starts_with("preset:") => {
+                        backend.update(|data| data.drink_preset(&action[7..], now()))
+                    }
+                    "toggle" => backend.update(|data| {
+                        data.settings.enabled = !data.settings.enabled;
+                        data.reset_clock(now());
+                        Ok(())
+                    }),
                     "pause" => backend.update(|data| {
                         data.pause(if data.paused_until > now() { 0 } else { 60 }, now())
                     }),
@@ -217,7 +257,8 @@ fn create_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
                 };
                 match result {
                     Ok(()) => {
-                        if action == "drink" || action == "pause" {
+                        if action.starts_with("preset:") || action == "pause" || action == "toggle"
+                        {
                             dismiss(&app);
                             broadcast(&app);
                         }
@@ -225,21 +266,6 @@ fn create_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
                     Err(error) => notice(&app, error),
                 }
             });
-        })
-        .on_tray_icon_event(|tray, event| {
-            if let TrayIconEvent::Click {
-                button: MouseButton::Left,
-                button_state: MouseButtonState::Up,
-                ..
-            } = event
-            {
-                let app = tray.app_handle().clone();
-                thread::spawn(move || {
-                    if let Err(error) = open_main(&app) {
-                        notice(&app, error);
-                    }
-                });
-            }
         })
         .build(app)?;
     update_tray(app, &app.state::<Backend>().snapshot()?)?;
@@ -301,9 +327,26 @@ async fn drink(
     app: AppHandle,
     backend: State<'_, Backend>,
     amount: u32,
+    label: Option<String>,
 ) -> Result<Snapshot, String> {
     authorize(&window, false)?;
-    backend.update(|data| data.drink(amount, now()))?;
+    backend.update(|data| match label {
+        Some(label) => data.drink_named(amount, Some(label), now()),
+        None => data.drink(amount, now()),
+    })?;
+    dismiss(&app);
+    broadcast(&app);
+    backend.snapshot()
+}
+#[tauri::command]
+async fn drink_preset(
+    window: WebviewWindow,
+    app: AppHandle,
+    backend: State<'_, Backend>,
+    id: String,
+) -> Result<Snapshot, String> {
+    authorize(&window, false)?;
+    backend.update(|data| data.drink_preset(&id, now()))?;
     dismiss(&app);
     broadcast(&app);
     backend.snapshot()
@@ -332,10 +375,11 @@ async fn save_settings(
     window: WebviewWindow,
     app: AppHandle,
     backend: State<'_, Backend>,
-    settings: Settings,
+    mut settings: Settings,
 ) -> Result<Snapshot, String> {
     authorize(&window, true)?;
     settings.validate()?;
+    settings.sync_cup();
     let previous = backend.snapshot()?.data.settings;
     let changed_login = previous.launch_at_login != settings.launch_at_login;
     if changed_login {
@@ -395,6 +439,40 @@ async fn dismiss_reminder(window: WebviewWindow, app: AppHandle) -> Result<(), S
     dismiss(&app);
     Ok(())
 }
+// This narrow command opens only the OS notification pane; the frontend cannot supply a URL.
+#[tauri::command]
+async fn open_notification_settings(window: WebviewWindow, app: AppHandle) -> Result<(), String> {
+    authorize(&window, true)?;
+    #[cfg(target_os = "macos")]
+    {
+        let url = format!(
+            "x-apple.systempreferences:com.apple.preference.notifications?id={}",
+            app.config().identifier
+        );
+        let status = std::process::Command::new("/usr/bin/open")
+            .arg(url)
+            .status()
+            .map_err(|error| format!("无法打开系统通知设置：{error}"))?;
+        if !status.success() {
+            return Err("无法打开系统通知设置，请在系统设置中选择通知。".into());
+        }
+        Ok(())
+    }
+    #[cfg(target_os = "windows")]
+    {
+        let _ = app;
+        std::process::Command::new("explorer.exe")
+            .arg("ms-settings:notifications")
+            .spawn()
+            .map_err(|error| format!("无法打开系统通知设置：{error}"))?;
+        Ok(())
+    }
+    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
+    {
+        let _ = app;
+        Err("请在系统设置中打开通知权限。".into())
+    }
+}
 #[tauri::command]
 async fn window_ready(window: WebviewWindow) -> Result<(), String> {
     authorize(&window, false)?;
@@ -419,12 +497,14 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             get_state,
             drink,
+            drink_preset,
             remove_record,
             save_settings,
             pause_reminders,
             test_reminder,
             dismiss_reminder,
-            window_ready
+            window_ready,
+            open_notification_settings
         ])
         .setup(|app| {
             let data_dir = app.path().app_data_dir()?;

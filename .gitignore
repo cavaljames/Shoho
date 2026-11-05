@@ -15,3 +15,17 @@ migration-backup/
 *.key
 src-tauri/icons/android/
 src-tauri/icons/ios/
+
+# Local caches, generated schemas and native installers
+.cache/
+coverage/
+*.tsbuildinfo
+*.dmg
+*.app/
+*.msi
+*.exe
+*.p12
+*.pfx
+src-tauri/gen/
+/tmp/
+/shoho.json*

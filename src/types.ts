@@ -1,6 +1,9 @@
+export interface Preset { id: string; name: string; amount: number }
 export interface Settings {
   goal: number;
   cup: number;
+  presets: Preset[];
+  defaultPresetId: string;
   interval: number;
   start: string;
   end: string;
@@ -8,7 +11,7 @@ export interface Settings {
   systemNotifications: boolean;
   launchAtLogin: boolean;
 }
-export interface DrinkRecord { id: string; amount: number; at: number }
+export interface DrinkRecord { id: string; amount: number; at: number; label?: string | null }
 export type ReminderKind = 'active' | 'off' | 'paused' | 'quiet' | 'complete';
 export interface Snapshot {
   settings: Settings;
