@@ -7,7 +7,8 @@
 - 主色：浅青玉色；配合冷白玻璃高光与暖白底板。
 - `icon.png`：恢复为首版内置 image_gen 生成的浅青玉色素材，保留原始颜色和透明度。
 - `logo.svg`：用于小尺寸或单色场景的简化矢量标识。
-- `trayTemplate.png`：与标识相呼应的单色托盘模板，适应系统深浅主题。
+- `tray.svg`：菜单栏专用的完整、左右对称水滴轮廓，按 18 pt 设计。
+- `trayTemplate.png`：由 `npm run icons:tray` 导出的 36 × 36 单色模板，在 macOS 深浅主题下自动反色。
 - `src-tauri/icons/`：通过 `npm run icons` 导出的各平台图标。
 
 ## 生成方式
