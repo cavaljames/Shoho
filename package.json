@@ -1,6 +1,6 @@
 {
   "name": "shoho",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "小喝 · Shoho — 喝一小口，休息片刻。",
   "private": true,
   "type": "module",
@@ -18,8 +18,9 @@
     "dist:mac": "node scripts/native.mjs tauri build --bundles app,dmg && node scripts/verify-macos.mjs",
     "dist:win": "node scripts/native.mjs tauri build --bundles nsis",
     "test:rust": "node scripts/native.mjs cargo test --manifest-path src-tauri/Cargo.toml",
-    "icons": "node scripts/icons.mjs",
-    "verify:mac": "node scripts/verify-macos.mjs"
+    "icons": "node scripts/icons.mjs && node scripts/tray-icon.mjs",
+    "verify:mac": "node scripts/verify-macos.mjs",
+    "icons:tray": "node scripts/tray-icon.mjs"
   },
   "dependencies": {
     "@tauri-apps/api": "2.12.4"
