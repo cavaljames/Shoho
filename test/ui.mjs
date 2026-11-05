@@ -9,7 +9,7 @@ const context = await browser.newContext({ viewport: { width: 480, height: 620 }
 const errors = [];
 await context.addInitScript(() => {
   const settings = { goal: 1800, cup: 200, presets: [{ id: 'sip', name: '一口', amount: 30 }, { id: 'cup', name: '一杯', amount: 200 }, { id: 'bowl', name: '一碗', amount: 350 }], defaultPresetId: 'cup', interval: 45, start: '00:00', end: '23:59', enabled: true, systemNotifications: false, launchAtLogin: false };
-  const state = JSON.parse(localStorage.getItem('shoho-fixture') || 'null') || { settings, records: [], pausedUntil: 0, nextReminderAt: Date.now() + 45 * 60000, platform: 'macos', version: '0.3.1', packaged: false, storageWarning: '' };
+  const state = JSON.parse(localStorage.getItem('shoho-fixture') || 'null') || { settings, records: [], pausedUntil: 0, nextReminderAt: Date.now() + 45 * 60000, platform: 'macos', version: '0.3.2', packaged: false, storageWarning: '' };
   let counter = 1; const callbacks = new Map(), listeners = new Map();
   window.__shohoCalls = [];
   const snapshot = () => { const total = state.records.reduce((sum, record) => sum + record.amount, 0); state.status = { kind: !state.settings.enabled ? 'off' : state.pausedUntil > Date.now() ? 'paused' : total >= state.settings.goal ? 'complete' : 'active', at: state.nextReminderAt }; return structuredClone(state); };

@@ -62,7 +62,9 @@ npm run dist:win
 
 产物位于 `src-tauri/target/release/bundle/`。需在对应操作系统上构建；GitHub Actions 已配置 macOS Apple Silicon、macOS Intel 和 Windows x64 构建，可手动或通过 `v*` 标签触发。工作流只保存构建产物，不自动发布。
 
-本地开发包未配置开发者证书。公开分发前需要配置 macOS 签名、公证和 Windows 签名。原生通知还取决于系统通知授权，默认的提醒浮窗可以独立使用。
+macOS 开发包使用完整的 ad-hoc 应用包签名。`npm run dist:mac` 和 macOS CI 构建都会执行严格签名校验、DMG 校验和只读挂载校验，检查实际交付的 App 版本与可执行文件，并生成 `.dmg.sha256` 校验文件。
+
+ad-hoc 签名保证应用包签名完整，但不是 Apple Developer ID 签名，也没有 Apple 公证。通过浏览器下载后，macOS 仍可能提示开发者无法验证；仅在确认来源与校验通过后，按 macOS 的「系统设置 → 隐私与安全性 → 仍要打开」流程允许该应用。公开分发需要配置 Developer ID Application 签名和 Apple 公证；Windows 公开分发同样应配置签名。原生通知还取决于系统通知授权，默认提醒浮窗可以独立使用。
 
 ## 数据兼容
 
@@ -94,3 +96,11 @@ Tauri 版数据位置：
 ## Git 提交范围
 
 `.gitignore` 排除本机工具链、依赖、前端与 Rust 构建产物、安装包、测试截图、缓存、迁移备份和本地环境文件。源码、依赖锁文件与构建所需的桌面图标纳入版本管理。可通过 `git ls-files -ci --exclude-standard` 检查是否误跟踪忽略文件，正常结果应为空。
+
+### 单独验证 macOS 安装包
+
+```sh
+npm run verify:mac
+```
+
+校验会拒绝只有编译器临时签名、缺少 `_CodeSignature/CodeResources` 的应用包。它检查文件完整性，不代表通过 Apple Gatekeeper 公证，也不会修改系统安全设置或移除下载隔离标记。
