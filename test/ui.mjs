@@ -10,7 +10,7 @@ const errors = [];
 await context.addInitScript(() => {
   const settings = { goal: 1800, cup: 200, interval: 45, start: '00:00', end: '23:59', enabled: true, systemNotifications: false, launchAtLogin: false };
   let saved = JSON.parse(localStorage.getItem('shoho-fixture') || 'null');
-  let state = saved || { settings, records: [], pausedUntil: 0, nextReminderAt: Date.now() + 45 * 60000, platform: 'macos', version: '0.2.1', packaged: false, storageWarning: '' };
+  let state = saved || { settings, records: [], pausedUntil: 0, nextReminderAt: Date.now() + 45 * 60000, platform: 'macos', version: '0.2.2', packaged: false, storageWarning: '' };
   let counter = 1; const callbacks = new Map(), listeners = new Map();
   const snapshot = () => { const total = state.records.reduce((sum, record) => sum + record.amount, 0); state.status = { kind: !state.settings.enabled ? 'off' : state.pausedUntil > Date.now() ? 'paused' : total >= state.settings.goal ? 'complete' : 'active', at: state.nextReminderAt }; return structuredClone(state); };
   const changed = () => { localStorage.setItem('shoho-fixture', JSON.stringify(state)); for (const [id, listener] of listeners) if (listener.event === 'shoho:changed') callbacks.get(listener.handler)({ event: listener.event, id, payload: snapshot() }); return snapshot(); };

@@ -77,4 +77,4 @@ Tauri 版数据位置：
 
 ## 视觉标识
 
-图标采用低饱和灰玉绿、磨砂玻璃和轻微立体光影；水滴下缘的弧形切口呼应「小喝一口」。应用图标与界面共用 `assets/icon.png`，菜单栏使用可自动适应深浅主题的单色模板 `assets/trayTemplate.png`。生成提示与素材说明见 [assets/BRAND.md](assets/BRAND.md)。
+图标采用浅青玉色、半透明玻璃和轻微立体光影；水滴下缘的弧形切口呼应「小喝一口」。应用图标与界面共用 `assets/icon.png`，菜单栏使用可自动适应深浅主题的单色模板 `assets/trayTemplate.png`。生成提示与素材说明见 [assets/BRAND.md](assets/BRAND.md)。
