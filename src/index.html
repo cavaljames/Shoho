@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>小喝 · Shoho</title>
+  <link rel="stylesheet" href="styles.css">
+  <script type="module" src="renderer.ts"></script>
+</head>
+<body>
+  <div class="titlebar" data-tauri-drag-region aria-hidden="true"><span>SHOHO · A LITTLE SIP, A LITTLE PAUSE</span></div>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="brand" href="#today" aria-label="小喝首页"><img class="brand-logo" src="/icon.png" alt=""><span>小喝<span class="brand-en">Shoho</span></span></a>
+      <div class="nav-label">给自己一点关照</div>
+      <nav aria-label="主导航">
+        <button class="nav-item selected" data-page="today" aria-current="page"><span class="nav-icon">◷</span>今日喝水<span class="nav-dot"></span></button>
+        <button class="nav-item" data-page="history"><span class="nav-icon">▥</span>饮水足迹</button>
+        <button class="nav-item" data-page="settings"><span class="nav-icon">⚙</span>提醒设置</button>
+      </nav>
+      <div class="sidebar-note"><span class="tiny-spark">✳</span><p>忙碌的间隙，<br>记得照顾自己。</p><div class="note-line"></div><span>ONE SIP AT A TIME.</span></div>
+      <div class="sidebar-footer"><span class="online-dot"></span> 你的喝水小伙伴 <span id="version">v0.2.0</span></div>
+    </aside>
+    <main>
+      <section id="page-today" class="page">
+        <header class="page-header"><div><div class="eyebrow" id="date-label"></div><h1>喝一小口，<span>休息片刻。</span></h1><p>不用着急，照顾好自己也是今天的小事。</p></div><span class="header-mark">☀</span></header>
+        <div class="dashboard">
+          <section class="hero-card" aria-labelledby="hero-title">
+            <div class="hero-top"><span class="pill"><span class="online-dot"></span> 今日的小目标</span><span id="goal-caption">每天，给自己一点滋润</span></div>
+            <div class="hero-content"><div class="hero-copy"><p class="small-label" id="hero-title">今天已经喝了</p><div class="amount"><span id="today-total">0</span><span>ml</span></div><p id="remaining-copy">一小口，也是一个好的开始。</p></div>
+              <div class="brand-scene" aria-hidden="true"><img class="brand-emblem" src="/icon.png" alt=""><span class="brand-caption">one little sip.</span></div>
+            </div>
+            <div class="goal-row"><span>每日目标 <strong id="goal-number">1,800 ml</strong></span><strong id="goal-percent">0%</strong></div><progress id="goal-progress" value="0" max="1800" aria-label="今日饮水进度"></progress>
+            <div class="drink-actions"><button class="primary-button" id="drink-button"><span>＋</span> 喝了一杯 <small id="cup-caption">200 ml</small></button><button class="secondary-button" id="custom-button">自定义水量 <span>↗</span></button></div>
+            <div class="hero-bottom">每一小口，都算数。<span>♡</span></div>
+          </section>
+          <div class="right-column">
+            <section class="reminder-card"><div class="section-heading"><h2><span>◴</span> 下次喝水</h2><span class="status-label" id="reminder-status">提醒中</span></div><div class="countdown" id="countdown">45<span>:00</span></div><p id="reminder-copy">小喝会在时间到了以后轻轻提醒你。</p><button id="pause-button" class="quiet-button">Ⅱ 暂停 1 小时</button><div class="reminder-hours" id="reminder-hours">09:00 — 22:00 · 每 45 分钟</div></section>
+            <section class="kind-note"><span>✿</span><div><h2>让好习惯，慢慢发生。</h2><p>从手边的一杯水开始，<br>给专注的自己一个小小的暂停。</p></div></section>
+          </div>
+        </div>
+        <section class="records-section"><div class="section-heading"><h2>今日饮水记录 <span class="count-badge" id="record-count">0</span></h2><span class="muted">小小积累，看得见</span></div><div id="today-records" class="records-list"></div></section>
+        <footer class="page-footer"><span>小喝 · Shoho</span><span>一点点，就很好。 <span class="footer-spark">✧</span></span></footer>
+      </section>
+      <section id="page-history" class="page" hidden>
+        <header class="page-header"><div><div class="eyebrow">YOUR LITTLE MOMENTS</div><h1>每一口，<span>都有足迹。</span></h1><p>看看过去七天的小小积累。</p></div><span class="header-mark">▥</span></header>
+        <div class="history-summary"><div><span>近七天总饮水量</span><strong id="week-total">0 <small>ml</small></strong></div><div><span>有记录的天数</span><strong id="week-days">0 <small>/ 7 天</small></strong></div><div><span>有记录日的平均水量</span><strong id="week-average">0 <small>ml</small></strong></div></div>
+        <section class="chart-card"><div class="section-heading"><h2>最近七天</h2><span class="muted">虚线为当前每日目标</span></div><div class="chart" id="week-chart"></div><p class="chart-note">饮水目标可以按自己的习惯调整，不必为了数字勉强喝水。</p></section>
+        <section class="records-section"><div class="section-heading"><h2>最近记录</h2><span class="muted">保存在这台电脑上</span></div><div id="history-records" class="records-list"></div><button class="quiet-button" id="more-history" hidden>查看更多记录</button></section>
+      </section>
+      <section id="page-settings" class="page" hidden>
+        <header class="page-header"><div><div class="eyebrow">MAKE IT YOUR OWN</div><h1>按你的节奏，<span>轻轻提醒。</span></h1><p>找到适合自己的喝水习惯。</p></div><span class="header-mark">⚙</span></header>
+        <form id="settings-form">
+          <section class="settings-card"><h2>喝水偏好</h2><div class="form-grid"><label>每日饮水目标<div class="input-unit"><input name="goal" type="number" min="200" max="6000" step="1" required><span>ml</span></div><small>按个人需求设置，200–6000 ml</small></label><label>默认每杯水量<div class="input-unit"><input name="cup" type="number" min="50" max="1000" step="1" required><span>ml</span></div><small>点击「喝了一杯」时记录的水量</small></label></div></section>
+          <section class="settings-card"><div class="setting-row"><div><h2>定时提醒</h2><p>在设定时段内，用轻提醒浮窗叫你喝水。</p></div><label class="switch"><input name="enabled" type="checkbox" aria-label="开启定时提醒"><span></span></label></div><div class="form-grid three"><label>每隔多久提醒<div class="input-unit"><input name="interval" type="number" min="5" max="180" step="1" required><span>分钟</span></div></label><label>开始时间<input name="start" type="time" required></label><label>结束时间<input name="end" type="time" required></label></div><p class="field-note">支持跨午夜时段；目标达成后，当天不再提醒。电脑休眠时暂停，唤醒后重新计时。</p></section>
+          <section class="settings-card"><div class="setting-row"><div><h2>同时发送系统通知</h2><p>需在系统设置中允许小喝发送通知。</p></div><label class="switch"><input name="systemNotifications" type="checkbox" aria-label="同时发送系统通知"><span></span></label></div><div class="setting-row separated"><div><h2>开机启动</h2><p id="login-caption">登录电脑后，让小喝陪你开始新的一天。</p></div><label class="switch"><input name="launchAtLogin" type="checkbox" aria-label="开机启动"><span></span></label></div></section>
+          <div class="settings-footer"><button class="primary-button" type="submit">保存设置 <span>✓</span></button><button class="secondary-button" type="button" id="test-reminder">体验一下提醒 ↗</button><span id="settings-message" role="status"></span></div>
+        </form>
+        <p class="privacy-note">⌂ 饮水记录只保存在本机，无需账号。关闭主窗口后，界面会释放，小喝仍会在托盘提醒你；在托盘菜单中可以彻底退出。</p>
+      </section>
+    </main>
+  </div>
+  <dialog id="custom-dialog"><form id="custom-form"><button type="button" class="dialog-close" id="close-dialog" aria-label="关闭">×</button><span class="dialog-icon">◒</span><h2>这一口，喝了多少？</h2><p>按实际水量记录就好。</p><div class="input-unit"><input id="custom-amount" type="number" min="50" max="1000" step="1" value="200" required aria-label="饮水量"><span>ml</span></div><div class="amount-presets"><button type="button" data-amount="100">100 ml</button><button type="button" data-amount="250">250 ml</button><button type="button" data-amount="350">350 ml</button><button type="button" data-amount="500">500 ml</button></div><button type="submit" class="primary-button">记下这一口 ✓</button></form></dialog>
+  <div id="toast" role="status" aria-live="polite" hidden></div>
+</body>
+</html>

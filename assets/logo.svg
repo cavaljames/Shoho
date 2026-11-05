@@ -1,0 +1,1 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024"><defs><mask id="sip"><rect width="1024" height="1024" fill="white"/><circle cx="784" cy="852" r="162" fill="black"/></mask></defs><path d="M512 120C575 235 795 445 795 625C795 930 230 925 230 625C230 440 438 250 512 120Z" fill="#657b70" mask="url(#sip)"/></svg>

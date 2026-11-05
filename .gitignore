@@ -1,0 +1,17 @@
+node_modules/
+release/
+.DS_Store
+test-artifacts/
+*.log
+dist/
+src-tauri/target/
+src-tauri/gen/schemas/
+.toolchain/
+migration-backup/
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+src-tauri/icons/android/
+src-tauri/icons/ios/
