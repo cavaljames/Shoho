@@ -15,8 +15,26 @@
         <section class="recent-section"><div class="section-heading"><h2>最近记录 <span id="record-count" class="badge">0</span></h2><button class="text-button" id="show-history">全部记录 ↗</button></div><div class="records-list" id="today-records"></div></section>
       </section>
       <section class="page" id="page-history" hidden>
+        <div class="history-switch" role="group" aria-label="记录视图"><button type="button" data-history-view="records" aria-pressed="true">饮水明细</button><button type="button" data-history-view="report" aria-pressed="false">月度报告</button></div>
+        <div id="history-details">
         <section class="chart-card"><div class="section-heading"><h2>最近 7 天</h2><span id="week-total" class="muted">0 ml</span></div><div class="chart" id="week-chart" aria-label="点击某一天查看记录"></div></section>
         <div class="section-heading history-heading"><h2 id="history-filter">全部记录</h2><button id="clear-filter" class="text-button" hidden>清除筛选</button></div><div class="records-list" id="history-records"></div><button class="custom-button" id="more-history" hidden>加载更多</button>
+        </div>
+        <section id="monthly-report" aria-label="月度饮水报告" aria-busy="false" hidden>
+          <div class="report-toolbar"><div><h2 id="report-month">月度报告</h2><span id="report-period" class="muted"></span></div><div class="report-navigation"><button type="button" id="report-current" class="text-button" hidden>本月</button><button type="button" id="report-prev" class="month-arrow" aria-label="上个月">‹</button><button type="button" id="report-next" class="month-arrow" aria-label="下个月">›</button></div></div>
+          <p id="report-loading" class="report-message" role="status" hidden>正在生成月报…</p>
+          <div id="report-error" class="report-message" role="status" hidden><span id="report-error-message"></span><button type="button" id="report-retry" class="text-button">重试</button></div>
+          <div id="report-content" hidden>
+            <div class="report-metrics"><div><span>累计 · ml</span><strong id="report-total">0</strong></div><div><span>日均 · ml</span><strong id="report-average">0</strong></div><div id="report-goal-metric"><span>达标天数</span><strong id="report-goal-days">0 / 0</strong></div></div>
+            <p id="report-comparison" class="report-comparison" hidden></p>
+            <div id="report-empty" class="report-empty" hidden><p>这个月还没有饮水记录</p><button type="button" id="report-start" class="text-button">去记录一口水 ↗</button></div>
+            <div class="report-weekdays" aria-hidden="true"><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span></div>
+            <div id="report-calendar" class="report-calendar" role="group" aria-label="点击日期查看饮水明细"></div>
+            <div class="report-legend"><span><i data-level="empty"></i>未记录</span><span><i data-level="recorded"></i>已记录</span><span><i data-level="goal"></i>已达标</span></div>
+            <section id="report-analysis" class="report-analysis"><div id="report-insights"></div><details class="report-times"><summary>饮水时段</summary><div id="report-time-slots"></div></details></section>
+            <details class="report-notes"><summary>统计口径</summary><p id="report-method"></p></details>
+          </div>
+        </section>
       </section>
       <section class="page" id="page-settings" hidden>
         <form id="settings-form">

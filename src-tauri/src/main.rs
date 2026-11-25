@@ -1,5 +1,6 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 mod model;
+mod report;
 mod storage;
 
 use model::{now, Data, Settings, Status};
@@ -322,6 +323,17 @@ fn get_state(window: WebviewWindow, backend: State<'_, Backend>) -> Result<Snaps
     backend.snapshot()
 }
 #[tauri::command]
+fn get_monthly_report(
+    window: WebviewWindow,
+    backend: State<'_, Backend>,
+    year: i32,
+    month: u32,
+) -> Result<report::MonthlyReport, String> {
+    authorize(&window, true)?;
+    let store = backend.0.store.lock().map_err(|_| "本地数据暂不可用。")?;
+    report::monthly_report(&store.data, year, month, now())
+}
+#[tauri::command]
 async fn drink(
     window: WebviewWindow,
     app: AppHandle,
@@ -496,6 +508,7 @@ fn main() {
         .plugin(tauri_plugin_notification::init())
         .invoke_handler(tauri::generate_handler![
             get_state,
+            get_monthly_report,
             drink,
             drink_preset,
             remove_record,
@@ -519,7 +532,7 @@ fn main() {
             };
             let isolated = cfg!(debug_assertions) && std::env::var_os("SHOHO_USER_DATA").is_some();
             let store = Store::load(
-                path.join("shoho.json"),
+                path.join(storage::DATABASE_FILE),
                 if isolated { None } else { Some(&legacy) },
                 now(),
             )?;

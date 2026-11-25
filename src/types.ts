@@ -24,3 +24,22 @@ export interface Snapshot {
   packaged: boolean;
   storageWarning: string;
 }
+
+export interface ReportDay { date: string; total: number; count: number }
+export interface MonthlyReport {
+  year: number;
+  month: number;
+  goal: number;
+  daysInMonth: number;
+  elapsedDays: number;
+  total: number;
+  average: number;
+  activeDays: number;
+  goalDays: number;
+  longestStreak: number;
+  recordCount: number;
+  previous: { year: number; month: number; average: number; changePercent: number } | null;
+  days: ReportDay[];
+  timeSlots: { label: string; startHour: number; total: number; count: number }[];
+  insights: string[];
+}

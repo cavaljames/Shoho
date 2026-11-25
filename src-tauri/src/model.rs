@@ -115,7 +115,7 @@ impl Settings {
         self.cup = self.default_preset().amount;
     }
 }
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 pub struct Record {
     pub id: String,
     pub amount: u32,

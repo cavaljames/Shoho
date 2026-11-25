@@ -1,4 +1,5 @@
 import { shoho } from './bridge';
+import { MonthlyReportView } from './monthly';
 import type { Snapshot, Settings, DrinkRecord } from './types';
 
 function $<T extends HTMLElement = HTMLElement>(selector: string): T {
@@ -7,6 +8,7 @@ function $<T extends HTMLElement = HTMLElement>(selector: string): T {
   return element;
 }
 let state: Snapshot, draft: Settings, page = 'today', busy = false, historyLimit = 20;
+let historyView = 'records';
 let historyDay: string | null = null, toastTimer: ReturnType<typeof setTimeout>;
 const number = (value: number) => value.toLocaleString('zh-CN');
 const dayKey = (at: number | Date) => { const d = new Date(at); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
@@ -22,7 +24,16 @@ function setPage(next: string) {
   document.querySelectorAll<HTMLElement>('.page').forEach(section => { section.hidden = section.id !== `page-${page}`; });
   document.querySelectorAll<HTMLButtonElement>('[data-page]').forEach(button => { if (button.dataset.page === page) button.setAttribute('aria-current', 'page'); else button.removeAttribute('aria-current'); });
   if (page === 'settings') fillSettings();
-  if (page === 'history') renderHistory();
+  monthly.update(state, page === 'history' && historyView === 'report');
+  if (page === 'history' && historyView === 'records') renderHistory();
+}
+function setHistoryView(next: string) {
+  historyView = next === 'report' ? 'report' : 'records';
+  $('#history-details').hidden = historyView !== 'records';
+  $('#monthly-report').hidden = historyView !== 'report';
+  document.querySelectorAll<HTMLButtonElement>('[data-history-view]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.historyView === historyView)));
+  monthly.update(state, page === 'history' && historyView === 'report');
+  if (historyView === 'records') renderHistory();
 }
 function renderRecords(element: HTMLElement, records: DrinkRecord[], date = false) {
   element.replaceChildren();
@@ -58,7 +69,8 @@ function render() {
   $('#remaining-copy').textContent = total >= goal ? '今日目标已完成' : `还差 ${number(goal - total)} ml`;
   $('#record-count').textContent = String(todayRecords().length);
   renderQuick(); renderRecords($('#today-records'), [...todayRecords()].sort((a, b) => b.at - a.at).slice(0, 2));
-  updateClock(); if (page === 'history') renderHistory();
+  monthly.update(state, page === 'history' && historyView === 'report');
+  updateClock(); if (page === 'history' && historyView === 'records') renderHistory();
 }
 function updateClock() {
   if (!state) return;
@@ -74,6 +86,7 @@ function updateClock() {
   }
   $('#pause-button').hidden = ['off', 'complete', 'quiet'].includes(kind);
   $('#pause-button').textContent = kind === 'paused' ? '恢复' : '暂停 1h';
+  monthly.tick();
 }
 function renderHistory() {
   const days = Array.from({ length: 7 }, (_, i) => { const date = new Date(); date.setDate(date.getDate() - 6 + i); return { date, total: totalFor(date) }; });
@@ -126,9 +139,11 @@ async function record(operation: () => Promise<Snapshot>) {
   catch (error) { toast(error instanceof Error ? error.message : String(error)); }
   finally { busy = false; renderQuick(); }
 }
+const monthly = new MonthlyReportView(day => { historyDay = day; historyLimit = 20; setHistoryView('records'); }, () => setPage('today'));
+document.querySelectorAll<HTMLButtonElement>('[data-history-view]').forEach(button => button.addEventListener('click', () => setHistoryView(button.dataset.historyView || 'records')));
 document.querySelectorAll<HTMLButtonElement>('[data-page]').forEach(button => button.addEventListener('click', () => setPage(button.dataset.page || 'today')));
 $('#home-button').addEventListener('click', () => setPage('today')); $('#edit-goal').addEventListener('click', () => setPage('settings'));
-$('#show-history').addEventListener('click', () => { historyDay = dayKey(Date.now()); setPage('history'); });
+$('#show-history').addEventListener('click', () => { historyDay = dayKey(Date.now()); historyLimit = 20; setHistoryView('records'); setPage('history'); });
 $('#clear-filter').addEventListener('click', () => { historyDay = null; historyLimit = 20; renderHistory(); });
 $('#more-history').addEventListener('click', () => { historyLimit += 20; renderHistory(); });
 $('#pause-button').addEventListener('click', () => act(async () => { receive(await shoho.pause(state.pausedUntil > Date.now() ? 0 : 60)); }));

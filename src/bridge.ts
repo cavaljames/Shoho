@@ -1,8 +1,9 @@
 import { invoke } from '@tauri-apps/api/core';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
-import type { Settings, Snapshot } from './types';
+import type { MonthlyReport, Settings, Snapshot } from './types';
 export const shoho = {
   getState: () => invoke<Snapshot>('get_state'),
+  monthlyReport: (year: number, month: number) => invoke<MonthlyReport>('get_monthly_report', { year, month }),
   drink: (amount: number, label?: string) => invoke<Snapshot>('drink', { amount, label: label || null }),
   drinkPreset: (id: string) => invoke<Snapshot>('drink_preset', { id }),
   remove: (id: string) => invoke<Snapshot>('remove_record', { id }),

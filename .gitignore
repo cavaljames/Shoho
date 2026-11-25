@@ -29,3 +29,9 @@ coverage/
 src-tauri/gen/
 /tmp/
 /shoho.json*
+
+# Local SQLite databases and transient transaction journals
+/sqlite.db*
+*.db-wal
+*.db-shm
+*.db-journal
